@@ -5,11 +5,11 @@ metadata:
   namespace: test-ns
 spec:
   replicas: 2
-  revisionHistoryLimit: 5
+  revisionHistoryLimit:
   strategy:
   ## indicate which strategy we want for rolling update
-    type: RollingUpdate  
-    rollingUpdate: 
+    type: RollingUpdate
+    rollingUpdate:
       maxUnavailable: 50% #max no of pod unavailable during update process
       maxSurge: 10% #max new no of pod get during this proces
   minReadySeconds: 30  #it will wait 30 sec after creation of new pod then it will delete old pods
@@ -55,7 +55,7 @@ metadata:
   namespace: test-ns
 spec:
   replicas: 1
-  selector: 
+  selector:
     app: mongo
   template:
     metadata:
@@ -73,7 +73,27 @@ spec:
           value: devdb
         - name: MONGO_INITDB_ROOT_PASSWORD
           value: devdb123
-    
+        volumeMounts:
+        - name: mongodbvol
+          mountPath: /data/db
+      volumes:
+      - name: mongodbvol
+        persistentVolumeClaim:
+          claimName: mongohostpathpv
+ 
+---
+
+apiVersion: v1           
+kind: PersistentVolumeClaim
+metadata:
+  name: mongohostpathpv
+  namespace: test-ns
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -84,6 +104,22 @@ spec:
   type: ClusterIP
   selector:
     app: mongo
-  ports: 
+  ports:
   - port: 27017
-    targetPort: 27017        
+    targetPort: 27017
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hostpathpv
+spec:
+  storageClassName: nfs-storageclass 
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 1Gi 
+  nfs:
+    server: 192.168.0.179
+    path: /mnt/nfs_share
+    

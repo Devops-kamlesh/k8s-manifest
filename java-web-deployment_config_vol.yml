@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp-deployment
+  namespace: test-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata: 
+      namespace: test-ns
+      labels:
+        app: javawebapp
+    spec:
+      containers:
+      - name: javawebappcontainer
+        image: docker8955/java-web-application
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: javawebappvol
+          mountPath: "/usr/local/tomcat/conf/tomcat-users.xml" 
+          subPath: "tomcat-users.xml"
+          #this will only update the particular file 
+      volumes:
+      # You set volumes at the Pod level, then mount them into containers inside that Pod
+      - name: javawebappvol
+        configMap:
+        # An array of keys from the ConfigMap to create as files
+          name: javawebapp-configmap
+          # An array of keys from the ConfigMap to create as files
+          items:
+          - key: tomcat-users.xml
+            path: tomcat-users.xml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebapp-service
+  namespace: test-ns
+spec:
+  selector:
+    app: javawebapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: NodePort
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapp-configmap
+  namespace: test-ns
+data:
+  tomcat-users.xml: |
+    <?xml version='1.0' encoding='utf-8'?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+              version="1.0">
+      <user username="kamlesh" password="admin" roles="admin-gui,manager-gui"/>
+    </tomcat-users>

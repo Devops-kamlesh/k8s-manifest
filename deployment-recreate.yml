@@ -4,15 +4,9 @@ metadata:
   name: mavenweappdeployment
   namespace: test-ns
 spec:
-  replicas: 4
-  revisionHistoryLimit: 5
+  replicas: 2
   strategy:
-  ## indicate which strategy we want for rolling update
-    type: RollingUpdate  
-    rollingUpdate: 
-      maxUnavailable: 50% #max no of pod unavailable during update process
-      maxSurge: 10% #max new no of pod get during this proces
-  minReadySeconds: 30  #it will wait 30 sec after creation of new pod then it will delete old pods
+    type: Recreate
   selector:
     matchLabels:
       app: mavenwebapp

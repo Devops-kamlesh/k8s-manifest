@@ -5,11 +5,11 @@ metadata:
   namespace: test-ns
 spec:
   replicas: 2
-  revisionHistoryLimit: 5
+  revisionHistoryLimit:
   strategy:
   ## indicate which strategy we want for rolling update
-    type: RollingUpdate  
-    rollingUpdate: 
+    type: RollingUpdate
+    rollingUpdate:
       maxUnavailable: 50% #max no of pod unavailable during update process
       maxSurge: 10% #max new no of pod get during this proces
   minReadySeconds: 30  #it will wait 30 sec after creation of new pod then it will delete old pods
@@ -26,13 +26,26 @@ spec:
         image: docker8955/spring-boot-mongo:latest
         ports:
         - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
         env:
         - name: MONGO_DB_HOSTNAME
-          value: mongosvc
+          value: mongodb-service
         - name: MONGO_DB_USERNAME
-          value: devdb
+          valueFrom:
+            configMapKeyRef:
+              name: mongoconfigmap
+              key: mongodbusername
         - name: MONGO_DB_PASSWORD
-          value: devdb123
+          valueFrom:
+            secretKeyRef:
+              name: mongosecret
+              key: mongodbpassword
 ---
 apiVersion: v1
 kind: Service
@@ -46,44 +59,20 @@ spec:
   ports:
   - port: 80
     targetPort: 8080
-
 ---
 apiVersion: v1
-kind: ReplicationController
+kind: ConfigMap
 metadata:
-  name: mongorc
+  name: mongoconfigmap
   namespace: test-ns
-spec:
-  replicas: 1
-  selector: 
-    app: mongo
-  template:
-    metadata:
-      name: mongopod
-      labels:
-        app: mongo
-    spec:
-      containers:
-      - name: mongocontainer
-        image: mongo
-        ports:
-        - containerPort: 27017
-        env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          value: devdb
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          value: devdb123
-    
+data:
+  mongodbusername: devdb
 ---
 apiVersion: v1
-kind: Service
+kind: Secret
 metadata:
-  name: mongosvc
+  name: mongosecret
   namespace: test-ns
-spec:
-  type: ClusterIP
-  selector:
-    app: mongo
-  ports: 
-  - port: 27017
-    targetPort: 27017        
+type: Opaque
+stringData:
+  mongodbpassword: devdb123

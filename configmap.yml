@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongoconfigmap
+  namespace: test-ns
+data:
+  mongodbusername: devdb
